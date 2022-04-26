@@ -3,8 +3,8 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase, Client
 from django.urls import reverse
 
-from ..models import Post, Group
 from yatube.settings import POSTS_PER_PAGE
+from ..models import Post, Group
 
 EXPECTED_POST_FORM_FIELDS = {
     'text': forms.fields.CharField,

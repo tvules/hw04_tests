@@ -3,8 +3,8 @@ from unittest import skipUnless
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from ..models import Post, Group
 from yatube.settings import VERBOSE_NAME_TESTING, HELP_TEXT_TESTING
+from ..models import Post, Group
 
 User = get_user_model()
 
