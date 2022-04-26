@@ -198,8 +198,7 @@ class PostsPagesTests(TestCase):
 
     def _form_fields_testing(self, response):
         """Сравнивает поля формы с ожидаемыми."""
-        for field, expected_type in (
-                PostsPagesTests.EXPECTED_POST_FORM_FIELDS.items()):
+        for field, expected_type in EXPECTED_POST_FORM_FIELDS.items():
             with self.subTest(field=field):
                 form_field = response.context.get('form').fields.get(field)
                 self.assertIsInstance(form_field, expected_type)
