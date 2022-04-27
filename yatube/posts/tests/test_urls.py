@@ -40,26 +40,26 @@ class PostsURLTests(TestCase):
     def setUp(self):
         self.guest_client = Client()
         self.authorized_client = Client()
-        self.authorized_client.force_login(PostsURLTests.user)
+        self.authorized_client.force_login(self.user)
         self.author_client = Client()
-        self.author_client.force_login(PostsURLTests.post.author)
+        self.author_client.force_login(self.post.author)
         self.URLS = {
-            f'/group/{PostsURLTests.group.slug}/': {
+            f'/group/{self.group.slug}/': {
                 'access': 'free',
                 'url_path': '/group/<slug>/',
                 'template': 'posts/group_list.html',
             },
-            f'/profile/{PostsURLTests.user.get_username()}/': {
+            f'/profile/{self.user.get_username()}/': {
                 'access': 'free',
                 'url_path': '/profile/<username>/',
                 'template': 'posts/profile.html',
             },
-            f'/posts/{PostsURLTests.post.id}/': {
+            f'/posts/{self.post.id}/': {
                 'access': 'free',
                 'url_path': '/posts/<post_id>/',
                 'template': 'posts/post_detail.html',
             },
-            f'/posts/{PostsURLTests.post.id}/edit/': {
+            f'/posts/{self.post.id}/edit/': {
                 'access': 'author',
                 'url_path': '/posts/<post_id>/edit/',
                 'template': 'posts/create_post.html',

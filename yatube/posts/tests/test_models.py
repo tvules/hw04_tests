@@ -28,7 +28,7 @@ class PostModelTests(TestCase):
 
     def test_models_have_correct_object_names(self):
         """Проверка корректности метода __str__."""
-        post = PostModelTests.post
+        post = self.post
         expected_object_name = post.text[:15]
         self.assertEqual(str(post), expected_object_name, (
             'Метод __str__ модели "Post" работает некорректно.'
@@ -74,7 +74,7 @@ class PostModelTests(TestCase):
 
     def test_pub_date_auto_now_add(self):
         """Проверка совпадения auto_now_add поля pub_date с ожидаемым."""
-        post = PostModelTests.post
+        post = self.post
         field = 'pub_date'
         expected_value = True
         self.assertEqual(
@@ -99,7 +99,7 @@ class GroupModelTests(TestCase):
 
     def test_models_have_correct_object_names(self):
         """Проверка корректности метода __str__."""
-        group = GroupModelTests.group
+        group = self.group
         expected_object_name = group.title
         self.assertEqual(str(group), expected_object_name, (
             'Метод __str__ модели "Group" работает некорректно.'
@@ -109,7 +109,7 @@ class GroupModelTests(TestCase):
                 'Тестирование для verbose_name отключено в настройках')
     def test_verbose_name(self):
         """Проверка совпадения verbose_name поля с ожидаемым."""
-        group = GroupModelTests.group
+        group = self.group
         field_verboses = {
             'title': 'Название',
             'slug': 'slug',
@@ -128,7 +128,7 @@ class GroupModelTests(TestCase):
                 'Тестирование для help_text отключено в настройках')
     def test_help_text(self):
         """Проверка совпадения help_text поля с ожидаемым."""
-        group = GroupModelTests.group
+        group = self.group
         field_help_texts = {
             'title': 'Название не должно превышать 200 символов.',
             'slug': 'Должен быть уникальным.',
@@ -144,7 +144,7 @@ class GroupModelTests(TestCase):
 
     def test_unique_slug(self):
         """Проверка совпадения unique поля slug c ожидаемым."""
-        group = GroupModelTests.group
+        group = self.group
         field = 'slug'
         expected_value = True
         self.assertEqual(
