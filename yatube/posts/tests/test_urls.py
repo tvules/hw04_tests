@@ -27,6 +27,7 @@ class PostsURLTests(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.user = User.objects.create_user(username='TestUser')
+        cls.user_author = User.objects.create_user(username='PostAuthor')
         cls.group = Group.objects.create(
             title='TestTitle',
             slug='test_slug',
@@ -34,7 +35,7 @@ class PostsURLTests(TestCase):
         )
         cls.post = Post.objects.create(
             text='TestText',
-            author=cls.user,
+            author=cls.user_author,
         )
 
     def setUp(self):
@@ -42,14 +43,14 @@ class PostsURLTests(TestCase):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
         self.author_client = Client()
-        self.author_client.force_login(self.post.author)
+        self.author_client.force_login(self.user_author)
         self.URLS = {
             f'/group/{self.group.slug}/': {
                 'access': 'free',
                 'url_path': '/group/<slug>/',
                 'template': 'posts/group_list.html',
             },
-            f'/profile/{self.user.get_username()}/': {
+            f'/profile/{self.user_author.get_username()}/': {
                 'access': 'free',
                 'url_path': '/profile/<username>/',
                 'template': 'posts/profile.html',
@@ -79,15 +80,10 @@ class PostsURLTests(TestCase):
         """Проверка доступности ожидаемых urls."""
         for url, details in self.URLS.items():
             with self.subTest(url=url):
-                if details['access'] == 'auth':
-                    response = self.authorized_client.get(url)
-                elif details['access'] == 'author':
-                    response = self.author_client.get(url)
-                else:
-                    response = self.guest_client.get(url)
-                self.assertNotEqual(
+                response = self.author_client.get(url)
+                self.assertEqual(
                     response.status_code,
-                    HTTPStatus.NOT_FOUND,
+                    HTTPStatus.OK,
                     (f'Страница `{details.get("url_path", url)}` не найдена, '
                      f'проверьте этот адрес в *urls.py*')
                 )
@@ -96,7 +92,7 @@ class PostsURLTests(TestCase):
         """Проверка используемого шаблона для URL-адреса."""
         for url, details in self.URLS.items():
             with self.subTest(url=url):
-                response = self.authorized_client.get(url)
+                response = self.author_client.get(url)
                 self.assertTemplateUsed(
                     response,
                     details['template'],
