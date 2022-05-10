@@ -1,26 +1,47 @@
+import shutil
+import tempfile
+
 from django import forms
+from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.test import TestCase, Client
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, Client, override_settings
 from django.urls import reverse
 
-from yatube.settings import POSTS_PER_PAGE
-from ..models import Post, Group
 from ..forms import PostForm
+from ..models import Post, Group
 
 EXPECTED_POST_FORM_FIELDS = {
     'text': forms.CharField,
     'group': forms.ModelChoiceField,
+    'image': forms.ImageField
 }
+
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 User = get_user_model()
 
 
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class PostsPagesTests(TestCase):
     """Тест view приложения posts."""
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.raw_image = (
+            b'\x47\x49\x46\x38\x39\x61\x02\x00'
+            b'\x01\x00\x80\x00\x00\x00\x00\x00'
+            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+            b'\x0A\x00\x3B'
+        )
+        cls.uploaded_image = SimpleUploadedFile(
+            name='TestImage.gif',
+            content=cls.raw_image,
+            content_type='image/gif',
+        )
         cls.user = User.objects.create_user(username='TestUser')
         cls.group = Group.objects.create(
             title='TestTitle',
@@ -36,7 +57,13 @@ class PostsPagesTests(TestCase):
             text='TestText',
             author=cls.user,
             group=cls.group,
+            image=cls.uploaded_image,
         )
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
         self.authorized_client = Client()
@@ -134,9 +161,8 @@ class PostsPagesTests(TestCase):
                 kwargs={'post_id': self.post.id},
             ),
         )
-        post_obj = response.context.get('form').instance
-        self._post_fields_testing(post_obj)
         form_obj = response.context.get('form')
+        self.assertEqual(form_obj.instance, self.post)
         self._post_form_fields_testing(form_obj)
 
     def test_new_post_on_correct_pages(self):
@@ -182,6 +208,7 @@ class PostsPagesTests(TestCase):
             'pub_date': self.post.pub_date,
             'author': self.post.author,
             'group': self.post.group,
+            'image': self.post.image,
         }
         for field, expected_value in expected_field_value.items():
             self.assertEqual(getattr(post_obj, field), expected_value)
@@ -210,7 +237,7 @@ class PaginatorViewsTest(TestCase):
         )
         posts_obj = [
             Post(text='TestText', author=cls.user, group=cls.group)
-            for _ in range(POSTS_PER_PAGE * 2)
+            for _ in range(settings.POSTS_PER_PAGE * 2)
         ]
         cls.posts = Post.objects.bulk_create(posts_obj)
 
@@ -242,9 +269,9 @@ class PaginatorViewsTest(TestCase):
         second_page_response = self.authorized_client.get(url + '?page=2')
         self.assertEqual(
             len(first_page_response.context.get('page_obj')),
-            POSTS_PER_PAGE,
+            settings.POSTS_PER_PAGE,
         )
         self.assertEqual(
             len(second_page_response.context.get('page_obj')),
-            POSTS_PER_PAGE,
+            settings.POSTS_PER_PAGE,
         )
