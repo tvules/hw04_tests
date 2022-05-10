@@ -11,16 +11,6 @@
     {% for post in page_obj %}
       <article>
         {% include 'includes/post.html' %}
-
-        {% if post.group %}
-          <p>
-            Группа:
-            <a href="{% url 'posts:group_list' post.group.slug %}">
-              {{ post.group.title }}
-            </a>
-          </p>
-        {% endif %}
-
       </article>
       {% if not forloop.last %}<hr>{% endif %}
     {% endfor %}
