@@ -2,8 +2,8 @@ from unittest import skipUnless
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.conf import settings
 
-from yatube.settings import VERBOSE_NAME_TESTING, HELP_TEXT_TESTING
 from ..models import Post, Group
 
 User = get_user_model()
@@ -34,7 +34,7 @@ class PostModelTests(TestCase):
             'Метод __str__ модели "Post" работает некорректно.'
         ))
 
-    @skipUnless(VERBOSE_NAME_TESTING,
+    @skipUnless(settings.VERBOSE_NAME_TESTING,
                 'Тестирование для verbose_name отключено в настройках')
     def test_verbose_name(self):
         """Проверка совпадения verbose_name поля с ожидаемым."""
@@ -54,7 +54,7 @@ class PostModelTests(TestCase):
                      f'должно быть равно "{expected_value}".'),
                 )
 
-    @skipUnless(HELP_TEXT_TESTING,
+    @skipUnless(settings.HELP_TEXT_TESTING,
                 'Тестирование для help_text отключено в настройках')
     def test_help_text(self):
         """Проверка совпадения help_text поля с ожидаемым."""
@@ -105,7 +105,7 @@ class GroupModelTests(TestCase):
             'Метод __str__ модели "Group" работает некорректно.'
         ))
 
-    @skipUnless(VERBOSE_NAME_TESTING,
+    @skipUnless(settings.VERBOSE_NAME_TESTING,
                 'Тестирование для verbose_name отключено в настройках')
     def test_verbose_name(self):
         """Проверка совпадения verbose_name поля с ожидаемым."""
@@ -124,7 +124,7 @@ class GroupModelTests(TestCase):
                      f'должно быть равно "{expected_value}".'),
                 )
 
-    @skipUnless(HELP_TEXT_TESTING,
+    @skipUnless(settings.HELP_TEXT_TESTING,
                 'Тестирование для help_text отключено в настройках')
     def test_help_text(self):
         """Проверка совпадения help_text поля с ожидаемым."""
