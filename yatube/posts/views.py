@@ -2,7 +2,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 
-from .forms import PostForm
+from .forms import PostForm, CommentForm
 from .models import Post, Group, User
 from .utils import _get_page_obj
 
@@ -44,8 +44,12 @@ def profile(request, username):
 def post_detail(request, post_id):
     """Возвращает шаблон страницы-обзор определенного поста."""
     post = get_object_or_404(Post, pk=post_id)
+    comments = post.comments.all()
+    comment_form = CommentForm()
     context = {
         'post': post,
+        'comments': comments,
+        'form': comment_form,
     }
     return render(request, 'posts/post_detail.html', context)
 
@@ -88,3 +92,16 @@ def post_edit(request, post_id):
         'form': form,
     }
     return render(request, 'posts/create_post.html', context)
+
+
+@login_required
+def add_comment(request, post_id):
+    """Добавляет комментарий к посту."""
+    post = get_object_or_404(Post, pk=post_id)
+    form = CommentForm(request.POST or None)
+    if form.is_valid():
+        comment = form.save(commit=False)
+        comment.post = post
+        comment.author = request.user
+        comment.save()
+    return redirect('posts:post_detail', post_id=post_id)
