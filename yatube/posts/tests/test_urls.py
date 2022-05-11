@@ -65,6 +65,11 @@ class PostsURLTests(TestCase):
                 'url_path': '/posts/<post_id>/edit/',
                 'template': 'posts/create_post.html',
             },
+            f'/posts/{self.post.id}/comment/': {
+                'access': 'auth',
+                'url_path': '/posts/<post_id>/comment/',
+                'template': 'posts/post_detail.html',
+            },
             '/create/': {
                 'access': 'auth',
                 'template': 'posts/create_post.html',
@@ -80,7 +85,7 @@ class PostsURLTests(TestCase):
         """Проверка доступности ожидаемых urls."""
         for url, details in self.URLS.items():
             with self.subTest(url=url):
-                response = self.author_client.get(url)
+                response = self.author_client.get(url, follow=True)
                 self.assertEqual(
                     response.status_code,
                     HTTPStatus.OK,
@@ -92,7 +97,7 @@ class PostsURLTests(TestCase):
         """Проверка используемого шаблона для URL-адреса."""
         for url, details in self.URLS.items():
             with self.subTest(url=url):
-                response = self.author_client.get(url)
+                response = self.author_client.get(url, follow=True)
                 self.assertTemplateUsed(
                     response,
                     details['template'],

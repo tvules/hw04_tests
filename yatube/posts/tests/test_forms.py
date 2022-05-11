@@ -109,3 +109,33 @@ class PostFormTests(TestCase):
                 text=form_data['text'],
             ).exists()
         )
+
+
+class CommentFormTest(TestCase):
+    """Тестирование формы CommentForm."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = User.objects.create_user(username='TestUser')
+        cls.post = Post.objects.create(
+            text='TestText',
+            author=cls.user,
+        )
+
+    def setUp(self):
+        self.authorized_client = Client()
+        self.authorized_client.force_login(user=self.user)
+
+    def test_add_comment_form(self):
+        """Тестирование работоспособности формы. Комментарий сохраняется."""
+        form = {
+            'text': 'TestComment',
+        }
+        response = self.authorized_client.post(
+            reverse('posts:add_comment', kwargs={'post_id': self.post.pk}),
+            data=form,
+        )
+        self.assertTrue(
+            self.post.comments.filter(text=form['text']).exists()
+        )
