@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.urls import reverse
 from django.db import models
 
 User = get_user_model()
@@ -63,6 +64,9 @@ class Post(models.Model):
     def __str__(self):
         return self.text[:15]
 
+    def get_absolute_url(self):
+        return reverse('posts:post_detail', kwargs={'post_id': self.pk})
+
 
 class Comment(models.Model):
     """Модель для комментариев."""
@@ -88,5 +92,33 @@ class Comment(models.Model):
         verbose_name='Дата публикации',
     )
 
+    class Meta:
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'
+
     def __str__(self):
         return self.text[:15]
+
+    def get_absolute_url(self):
+        return reverse('posts:post_detail', kwargs={'post_id': self.post_id})
+
+
+class Follow(models.Model):
+    """Модель для подписок на авторов."""
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='follower',
+        verbose_name='Пользователь',
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='following',
+        verbose_name='Автор',
+    )
+
+    class Meta:
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
