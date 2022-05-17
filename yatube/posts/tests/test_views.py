@@ -4,12 +4,13 @@ import tempfile
 from django import forms
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, Client, override_settings
 from django.urls import reverse
 
 from ..forms import PostForm
-from ..models import Post, Group
+from ..models import Post, Group, Follow
 
 EXPECTED_POST_FORM_FIELDS = {
     'text': forms.CharField,
@@ -68,6 +69,7 @@ class PostsPagesTests(TestCase):
     def setUp(self):
         self.authorized_client = Client()
         self.authorized_client.force_login(user=self.user)
+        cache.clear()
 
     def test_pages_uses_correct_template(self):
         """Проверка используемого шаблона для URL-адреса."""
@@ -166,7 +168,7 @@ class PostsPagesTests(TestCase):
         self._post_form_fields_testing(form_obj)
 
     def test_new_post_on_correct_pages(self):
-        """Пост появляется на где должен."""
+        """Пост появляется где должен."""
         pages_which_post = [
             reverse(
                 'posts:index'
@@ -244,6 +246,7 @@ class PaginatorViewsTest(TestCase):
     def setUp(self):
         self.authorized_client = Client()
         self.authorized_client.force_login(user=self.user)
+        cache.clear()
 
     def test_page_pagination(self):
         """Проверяет пагинацию страницы."""
@@ -275,3 +278,107 @@ class PaginatorViewsTest(TestCase):
             len(second_page_response.context.get('page_obj')),
             settings.POSTS_PER_PAGE,
         )
+
+
+class CacheViewsTests(TestCase):
+    """Тест кеширования."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = User.objects.create_user(username='TestUser')
+        cls.post = Post.objects.create(
+            text='TestText',
+            author=cls.user,
+        )
+        cls.URLS = {
+            'index_page': reverse('posts:index')
+        }
+
+    def setUp(self):
+        cache.clear()
+
+    def test_cache_index_page(self):
+        url = self.URLS['index_page']
+        response = self._get_response(url)
+        self.post.delete()
+        self.assertEqual(
+            self._get_response(url).content,
+            response.content,
+        )
+        cache.clear()
+        self.assertNotEqual(
+            self._get_response(url).content,
+            response.content,
+        )
+
+    def _get_response(self, url):
+        return self.client.get(url)
+
+
+class FollowViewsTests(TestCase):
+    """Тест подписки на авторов."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user_author = User.objects.create_user(username='TestUserAuthor')
+        cls.user_follower = User.objects.create_user(username='TestUser')
+        cls.user_auth = User.objects.create_user('TestAuthUser')
+        cls.post = Post.objects.create(
+            text='TestText',
+            author=cls.user_author,
+        )
+
+    def setUp(self):
+        self.client.force_login(self.user_auth)
+        self.client_author = Client()
+        self.client_author.force_login(self.user_author)
+        self.client_follower = Client()
+        self.client_follower.force_login(self.user_follower)
+
+    def test_following(self):
+        """Юзер может подписаться на автора."""
+        self.client_follower.get(
+            reverse(
+                'posts:profile_follow',
+                kwargs={'username': self.user_author.get_username()}
+            ),
+        )
+        self.assertTrue(
+            Follow.objects.filter(
+                user=self.user_follower,
+                author=self.user_author,
+            ).exists()
+        )
+
+    def test_unfollowing(self):
+        """Юзер может отменить подписку на автора."""
+        self.client_follower.get(
+            reverse(
+                'posts:profile_unfollow',
+                kwargs={'username': self.user_author.get_username()}
+            ),
+        )
+        self.assertFalse(
+            Follow.objects.filter(
+                user=self.user_follower,
+                author=self.user_author,
+            ).exists()
+        )
+
+    def test_post_in_follow_page(self):
+        """Пост появляется на странице /posts/follow/"""
+        self.client_follower.get(
+            reverse(
+                'posts:profile_follow',
+                kwargs={'username': self.user_author.get_username()}
+            ),
+        )
+        response = self.client_follower.get(reverse('posts:follow_index'))
+        self.assertIn(self.post, response.context.get('page_obj'))
+
+    def test_post_not_in_follow_page(self):
+        """Пост не появляется на странице /posts/follow/"""
+        response = self.client.get(reverse('posts:follow_index'))
+        self.assertNotIn(self.post, response.context.get('page_obj'))

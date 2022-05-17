@@ -68,11 +68,21 @@ class PostsURLTests(TestCase):
             f'/posts/{self.post.id}/comment/': {
                 'access': 'auth',
                 'url_path': '/posts/<post_id>/comment/',
-                'template': 'posts/post_detail.html',
+                'template': None,
             },
             '/create/': {
                 'access': 'auth',
                 'template': 'posts/create_post.html',
+            },
+            f'/profile/{self.user_author.get_username()}/follow/': {
+                'access': 'auth',
+                'url_path': '/profile/<username>/follow/',
+                'template': None,
+            },
+            f'/profile/{self.user_author.get_username()}/unfollow/': {
+                'access': 'free',
+                'url_path': '/profile/<username>/unfollow/',
+                'template': None,
             },
         }
 
@@ -86,9 +96,9 @@ class PostsURLTests(TestCase):
         for url, details in self.URLS.items():
             with self.subTest(url=url):
                 response = self.author_client.get(url, follow=True)
-                self.assertEqual(
+                self.assertIn(
                     response.status_code,
-                    HTTPStatus.OK,
+                    (HTTPStatus.OK, HTTPStatus.METHOD_NOT_ALLOWED),
                     (f'Страница `{details.get("url_path", url)}` не найдена, '
                      f'проверьте этот адрес в *urls.py*')
                 )
@@ -96,21 +106,22 @@ class PostsURLTests(TestCase):
     def test_urls_uses_correct_template(self):
         """Проверка используемого шаблона для URL-адреса."""
         for url, details in self.URLS.items():
-            with self.subTest(url=url):
-                response = self.author_client.get(url, follow=True)
-                self.assertTemplateUsed(
-                    response,
-                    details['template'],
-                    (f'URL-адрес `{details.get("url_path", url)}` использует '
-                     f'не соответствующий html-шаблон.')
-                )
+            if details['template'] is not None:
+                with self.subTest(url=url):
+                    response = self.author_client.get(url)
+                    self.assertTemplateUsed(
+                        response,
+                        details['template'],
+                        (f'URL-адрес `{details.get("url_path", url)}` '
+                         f'использует не соответствующий html-шаблон.')
+                    )
 
     def test_urls_redirect_anonymous_on_login(self):
         """Проверка редиректа для неавторизованных пользователей."""
         for url, details in self.URLS.items():
             with self.subTest(url=url):
                 if details['access'] != 'free':
-                    response = self.guest_client.get(url)
+                    response = self.guest_client.get(url, follow=True)
                     self.assertRedirects(
                         response,
                         reverse(LOGIN_URL) + f'?next={url}',
